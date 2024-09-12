@@ -1,0 +1,50 @@
+#!/bin/zsh
+
+#Запрос пути к файлу
+read "filename?Введите путь до файла: "
+
+if [ ! -f "$filename" ]; then
+    echo "Файл $filename не найден"
+    exit 1
+fi
+
+# Запрос URL для Kibana
+read "kibana_url?Введите URL для Kibana: "
+
+# Запрос версии Kibana
+read "kibana_version?Введите версию Kibana: "
+
+# Запрос имени пользователя
+read "admin?Введите имя пользователя: "
+
+# Запрос пароля (скрытый ввод)
+read -s "password?Введите пароль: "
+
+echo -e "\n"
+
+# Форматирование файла с помощью jq
+jq -c . "${filename}.json" > "${filename}.json"
+
+# Добавление {} в начало json запроса (необходимо)
+echo -e "{}\n$(cat "${filename}.json")" > "${filename}.json"
+
+# Выполнение curl команды
+response=$(curl -X POST \
+    -H "Content-Type: application/json" \
+    -H "kbn-version: $kibana_version" \
+    --data-binary "@${filename}.json" \
+    -H "kbn-xsrf: reporting" \
+    -u "${admin}:${password}" \
+    --write-out "%{http_code}" \
+    --silent \
+    --output logs.txt \
+    "$kibana_url")
+
+if [ "$response" -eq 200 ]; then
+    echo "Запрос успешно выполнен. Логи сохранены в файл logs.txt"
+else
+    echo "Ошибка при выполнении запроса. Код ответа: $response"
+    echo "Подробности в файле logs.txt"
+    exit 1
+
+fi
