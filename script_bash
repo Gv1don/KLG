@@ -1,0 +1,53 @@
+#!/bin/bash
+
+read -p "Enter the filepath: " filepath
+
+if [ ! -f "${filepath}" ]; then
+    echo "$filepath not found"
+    exit 1
+fi
+
+read -p "Enter Kibana domain: " kibana_domain
+
+read -p "Enter Kibana version: " kibana_version
+
+read -p "Enter Kibana user: " user
+
+read -s -p "Enter password for this user: " password
+
+echo -e "\n"
+
+# Formatting a file using jq
+jq -c . "${filepath}" > "${filepath}.json"
+
+# Adding {} to the beginning of a JSON (just for it work)
+echo -e "{}\n$(cat "${filepath}.json")" > "${filepath}.json"
+
+# Curl command execution
+response=$(curl -X POST \
+    -H "Content-Type: application/json" \
+    -H "kbn-version: $kibana_version" \
+    --data-binary "@${filepath}.json" \
+    -H "kbn-xsrf: reporting" \
+    -u "${user}:${password}" \
+    --write-out "%{http_code}" \
+    --silent \
+    --output logs \
+    "http://${kibana_domain}/elasticsearch/_msearch")
+
+if [ -f "${filepath}.json" ]; then
+    rm -rf "${filepath}.json"
+fi
+
+if [ "$response" -eq 200 ]; then
+    if [ -f "./logs" ]; then
+        jq . "logs" > "logs.txt"
+        echo "Request successfully completed. Logs was saved to logs.txt"
+        rm -rf "logs"
+    fi
+else
+    echo "Request error. Error code: $response"
+    echo "More info in logs.txt"
+    exit 1
+fi
+

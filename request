@@ -1,0 +1,71 @@
+{
+  "size": 500,
+  "sort": [
+    {
+      "@timestamp": {
+        "order": "desc",
+        "unmapped_type": "boolean"
+      }
+    }
+  ],
+  "query": {
+    "filtered": {
+      "query": {
+        "query_string": {
+          "query": "host: \"amocore\" AND entity: \"ppfurs\"",
+          "analyze_wildcard": true
+        }
+      },
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "@timestamp": {
+                  "gte": 1725742800000,
+                  "lte": 1726347599999,
+                  "format": "epoch_millis"
+                }
+              }
+            }
+          ],
+          "must_not": []
+        }
+      }
+    }
+  },
+  "highlight": {
+    "pre_tags": [
+      "@kibana-highlighted-field@"
+    ],
+    "post_tags": [
+      "@/kibana-highlighted-field@"
+    ],
+    "fields": {
+      "message": {}
+    },
+    "require_field_match": false,
+    "fragment_size": 2147483647
+  },
+  "aggs": {
+    "2": {
+      "date_histogram": {
+        "field": "@timestamp",
+        "interval": "3h",
+        "time_zone": "Europe/Minsk",
+        "min_doc_count": 0,
+        "extended_bounds": {
+          "min": 1725742800000,
+          "max": 1726347599999
+        }
+      }
+    }
+  },
+  "fields": [
+    "message"
+  ],
+  "script_fields": {},
+  "fielddata_fields": [
+    "@timestamp"
+  ]
+}
